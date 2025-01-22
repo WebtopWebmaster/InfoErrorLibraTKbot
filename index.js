@@ -1,10 +1,23 @@
 require('dotenv').config();
 
+const express = require('express')
+const app = express()
+const port = 8000
+
+app.get('/', (req, res) => {
+  res.send('Hello World!')
+})
+
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})
+
+
 const {MongoClient} = require('mongodb');
 const clientDB = new MongoClient(process.env.MONGO_URL);
 
 const TelegramApi = require('node-telegram-bot-api');
-const token = '8032209676:AAEkoFpPWwDhwsHgRe-pfNzxvm5PbTXIwvk';
+const token = process.env.BOT_TOKEN;
 const bot = new TelegramApi(token, {polling:true});
 const errOptions = {
     reply_markup: JSON.stringify({
@@ -52,7 +65,7 @@ const start = async()=> {
         }
         // Print returned documents
         for await (const doc of err) {
-            console.dir(doc);
+            console.log(doc.prktype + ' : (' + doc.fullerror + ') : ' +doc.description);
             bot.sendMessage(chatId, doc.prktype + ' : (' + doc.fullerror + ') : ' +doc.description);
         }
 
