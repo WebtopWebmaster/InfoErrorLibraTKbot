@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+//чтоб не падал облачный сервис
 const express = require('express')
 const app = express()
 const port = 8000
@@ -27,6 +28,8 @@ const errOptions = {
     })
 }
 
+let prkType='all';
+
 
 const start = async()=> {
 
@@ -50,25 +53,61 @@ const start = async()=> {
     
         if (text ==='/start') {
             await bot.sendSticker(chatId, 'CAACAgIAAxkBAAELysFnj1u8appY8vL7gGl-O2NaaT6QIwACMF0AAjMvgEhUAof3VQABWBE2BA');
-            // return bot.sendMessage(chatId, `Информация по ошибкам.`, errOptions);
-            return bot.sendMessage(chatId, 'Информация по ошибкам. Введите номер ошибки (без Е и т.п., просто число.)');
+            return bot.sendMessage(chatId, 'Информация по ошибкам. Введите номер ошибки (без Е и т.п., просто число.)', {
+            reply_markup: {
+                keyboard: [
+                    ['🚗 GlobalStar', '🚙 T20 ND'],
+                    ['⭐️ Поиск по всем ТРК']
+                ],
+                resize_keyboard: true
+            }
+        })
+
         }
         
         if (text !== '/start') {
             const errorcode = clientDB.db('ErrorDB').collection('ErrorCode');
-            const err = await errorcode.find({error: text});
+            let err;
+        if (prkType === 'all') {
+            err = errorcode.find({error: text});
+        } else {
+            err = errorcode.find({error: text, prktype: prkType});
+        }
+            
             //console.log(err);
 
+        if (text === '🚗 GlobalStar') {
+            prkType = 'GlobalStar';
+            return bot.sendMessage(chatId, 'Будет произведен поиск только по GlobalStar.');
+        } 
+        if (text === '🚙 T20 ND') {
+            prkType = 'T20 ND';
+            return bot.sendMessage(chatId, 'Будет произведен поиск только по T20 ND.');
+        }
+        if (text === '⭐️ Поиск по всем ТРК') {
+            prkType = 'all';
+            return bot.sendMessage(chatId, 'Будет произведен поиск по всем ТРК из базы.');
+        }   
+   
+        // console.log(prkType);
         // Print a message if no documents were found
-        if ((await errorcode.countDocuments({error: text})) === 0) {
-            return bot.sendMessage(chatId, 'Ошибка не найдена.');
+        if (prkType === 'all') {
+            if ((await errorcode.countDocuments({error: text})) === 0) {
+                return bot.sendMessage(chatId, 'Ошибка не найдена.');
+            }
         }
-        // Print returned documents
-        for await (const doc of err) {
-            console.log(doc.prktype + ' : (' + doc.fullerror + ') : ' +doc.description);
-            bot.sendMessage(chatId, doc.prktype + ' : (' + doc.fullerror + ') : ' +doc.description);
+        else {
+            if ((await errorcode.countDocuments({error: text, prktype: prkType})) === 0) {
+                console.log("prkType");
+                return bot.sendMessage(chatId, 'Ошибка не найдена.');
+            }
         }
-
+            // Print returned documents
+            for await (const doc of err) {
+                console.log(doc.prktype + ' : (' + doc.fullerror + ') : ' +doc.description);
+                bot.sendMessage(chatId, doc.prktype + ' : (' + doc.fullerror + ') : ' +doc.description);
+            }
+        
         }
 
         //bot.sendMessage(chatId, `Send ${text}`);
